@@ -1,0 +1,69 @@
+# Docker Compose: starts frontend + backend + postgres with internal networking.
+# Usage:
+#   docker compose up --build        # build & start
+#   docker compose down              # stop (keeps volume)
+#   docker compose down -v           # stop AND wipe database
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: inv-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-inventory_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-inventory_password}
+      POSTGRES_DB: ${POSTGRES_DB:-inventory_db}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - invnet
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-inventory_user} -d ${POSTGRES_DB:-inventory_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: inv-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-inventory_user}:${POSTGRES_PASSWORD:-inventory_password}@postgres:5432/${POSTGRES_DB:-inventory_db}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-inventory_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-inventory_password}
+      POSTGRES_DB: ${POSTGRES_DB:-inventory_db}
+      SECRET_KEY: ${SECRET_KEY:-change-me}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost}
+      DEBUG: "False"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    networks:
+      - invnet
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-}
+    container_name: inv-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+    networks:
+      - invnet
+
+volumes:
+  pgdata:
+
+networks:
+  invnet:
+    driver: bridge

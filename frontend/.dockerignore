@@ -1,0 +1,14 @@
+# Frontend .dockerignore
+node_modules
+dist
+.env
+.env.*
+.git
+.gitignore
+.idea
+.vscode
+.DS_Store
+*.log
+README.md
+.dockerignore
+nginx.conf.example

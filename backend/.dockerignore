@@ -1,0 +1,23 @@
+# Backend .dockerignore
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+.env
+.venv
+venv/
+.env*
+.pytest_cache
+.mypy_cache
+.ruff_cache
+tests/
+*.log
+.git
+.gitignore
+.idea
+.vscode
+.DS_Store
+README.md
+.dockerignore
+alembic.ini.example
